@@ -1,4 +1,5 @@
 import argparse
+import csv
 import logging
 import numpy as np
 import SimpleITK
@@ -15,6 +16,9 @@ logger = logging.getLogger("NIfTI to SEG")
 
 # Get color palette
 colormap = tableau.get_map("Tableau_20")
+
+# Default CSV delimiter
+CSV_DELIMITER = ","
 
 
 def parse_args():
@@ -42,6 +46,13 @@ def parse_args():
         help="The path where the created DICOM SEG file should be saved",
         required=True,
     )
+    # Label map for the ROIs
+    parser.add_argument(
+        "-l",
+        "--label_map",
+        help="The path to a CSV file containing pairs of <label_id>,<label_name> entries",
+        required=False,
+    )
     args = parser.parse_args()
     logger.debug(f"parsed args : {vars(args)}")
     return args
@@ -62,6 +73,7 @@ def get_nifti_labels(path):
 
 
 def map_nifti_labels_to_names(labels):
+
     print(
         f"Found {len(labels)} regions in the NIfTI file, please input a name for each of them."
     )
@@ -76,6 +88,36 @@ def map_nifti_labels_to_names(labels):
         i += 1
 
     print("Thank you, DICOM SEG file will be generated now...")
+
+    return labels_dict
+
+
+def parse_labelmap_file(labelmap_path, labels):
+    labels_dict = {}
+    line_count = 0
+
+    with open(labelmap_path) as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=CSV_DELIMITER)
+        for row in csv_reader:
+            label_id = row[0]
+            label_name = row[1]
+            labels_dict[int(label_id)] = label_name
+            line_count += 1
+
+        if len(labels) != line_count:
+            raise ValueError(
+                "Number of <label_id>,<label_name> pairs doesn't match the number of labels in the NIfTI file"
+            )
+
+        for label in labels:
+            if label not in labels_dict:
+                raise ValueError(
+                    f"Label with pixel value {label} is not present in the CSV file!"
+                )
+
+        print(
+            f"{len(labels)}/{len(labels)} labels correctly mapped with the provided CSV file, generating DICOM SEG file now..."
+        )
 
     return labels_dict
 
@@ -187,7 +229,10 @@ if __name__ == "__main__":
     labels = get_nifti_labels(args.nifti_roi)
 
     # Map label ID to region names
-    roi_dict = map_nifti_labels_to_names(labels)
+    if not args.label_map:
+        roi_dict = map_nifti_labels_to_names(labels)
+    else:
+        roi_dict = parse_labelmap_file(args.label_map, labels)
 
     # Transform NIfTI file to SEG using pydicom-seg
     seg_output = nifti_to_seg(
