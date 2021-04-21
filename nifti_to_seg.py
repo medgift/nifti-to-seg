@@ -137,7 +137,7 @@ def generate_metadata(roi_dict):
         "SeriesDescription": "Segmentation",
         "SeriesNumber": "300",
         "InstanceNumber": "1",
-        "segmentAttributes": get_segments(roi_dict),
+        "segmentAttributes": [get_segments(roi_dict)],
         "ContentLabel": "SEGMENTATION",
         "ContentDescription": "Image segmentation",
         "ClinicalTrialCoordinatingCenterName": "dcmqi",
@@ -160,29 +160,27 @@ def get_segments(roi_dict):
 
 
 def get_segment(label, description, color):
-    return [
-        {
-            # Make sure we are using a simple int (not a NumPy type)
-            "labelID": int(label),
-            "SegmentDescription": description,
-            "SegmentAlgorithmType": "AUTOMATIC",
-            "SegmentAlgorithmName": "Automatic",
-            # Snomed Coding for Tissue
-            "SegmentedPropertyCategoryCodeSequence": {
-                "CodeValue": "85756007",
-                "CodingSchemeDesignator": "SCT",
-                "CodeMeaning": "Tissue",
-            },
-            # Snomed Coding for Organ
-            "SegmentedPropertyTypeCodeSequence": {
-                "CodeValue": "113343008",
-                "CodingSchemeDesignator": "SCT",
-                "CodeMeaning": "Organ",
-            },
-            # Color to display
-            "recommendedDisplayRGBValue": color,
-        }
-    ]
+    return {
+        # Make sure we are using a simple int (not a NumPy type)
+        "labelID": int(label),
+        "SegmentDescription": description,
+        "SegmentAlgorithmType": "AUTOMATIC",
+        "SegmentAlgorithmName": "Automatic",
+        # Snomed Coding for Tissue
+        "SegmentedPropertyCategoryCodeSequence": {
+            "CodeValue": "85756007",
+            "CodingSchemeDesignator": "SCT",
+            "CodeMeaning": "Tissue",
+        },
+        # Snomed Coding for Organ
+        "SegmentedPropertyTypeCodeSequence": {
+            "CodeValue": "113343008",
+            "CodingSchemeDesignator": "SCT",
+            "CodeMeaning": "Organ",
+        },
+        # Color to display
+        "recommendedDisplayRGBValue": color,
+    }
 
 
 def nifti_to_seg(nifti_roi, dicom_input, seg_output, roi_dict):
