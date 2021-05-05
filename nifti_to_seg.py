@@ -214,6 +214,7 @@ def match_orientation(sitk_img_ref, sitk_img_sec, verbose=True):
             print(f"Converting orientation of second image: '{orientation_sec}' --> '{orientation_ref}'")
         orientation_filter.SetDesiredCoordinateOrientation(orientation_ref)
         img_sec_reoriented = orientation_filter.Execute(sitk_img_sec)
+        orientation_sec_reoriented = orientation_filter.GetOrientationFromDirectionCosines(img_sec_reoriented.GetDirection())
         return img_sec_reoriented
     else:
         return sitk_img_sec
@@ -236,9 +237,10 @@ def match_size(sitk_img_ref, sitk_img_sec, verbose=True, interpolator=SimpleITK.
     else:
         return sitk_img_sec
 
-def get_dcm_as_sitk(dicom_series_paths):
+def get_dcm_as_sitk(path_to_dcm_dir):
     reader = SimpleITK.ImageSeriesReader()
-    reader.SetFileNames(dicom_series_paths)
+    dicom_names = reader.GetGDCMSeriesFileNames(path_to_dcm_dir)
+    reader.SetFileNames(dicom_names)
     image = reader.Execute()
     return image
 
@@ -264,7 +266,7 @@ def nifti_to_seg(nifti_roi, dicom_input, seg_output, roi_dict, match_orientation
 
     # Ensure that segmentation image and dicom image have same orientation and size
     if match_orientation_flag or match_size_flag:
-        dicom_img = get_dcm_as_sitk(dicom_series_paths)
+        dicom_img = get_dcm_as_sitk(dicom_input)
         if match_orientation_flag:
             segmentation = match_orientation(dicom_img, segmentation, verbose=True)
         if match_size_flag:
