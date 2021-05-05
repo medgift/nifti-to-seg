@@ -61,7 +61,7 @@ def parse_args():
         required=False,
         const=True,
         default=False,
-        nargs='?'
+        nargs="?",
     )
     # Match size of segmentation image to dicom series
     parser.add_argument(
@@ -71,7 +71,7 @@ def parse_args():
         required=False,
         const=True,
         default=False,
-        nargs='?'
+        nargs="?",
     )
     args = parser.parse_args()
     logger.debug(f"parsed args : {vars(args)}")
@@ -205,29 +205,41 @@ def get_segment(label, description, color):
 
 def match_orientation(sitk_img_ref, sitk_img_sec, verbose=True):
     orientation_filter = SimpleITK.DICOMOrientImageFilter()
-    orientation_ref = orientation_filter.GetOrientationFromDirectionCosines(sitk_img_ref.GetDirection())
-    orientation_sec = orientation_filter.GetOrientationFromDirectionCosines(sitk_img_sec.GetDirection())
+    orientation_ref = orientation_filter.GetOrientationFromDirectionCosines(
+        sitk_img_ref.GetDirection()
+    )
+    orientation_sec = orientation_filter.GetOrientationFromDirectionCosines(
+        sitk_img_sec.GetDirection()
+    )
     if verbose:
         print(f"Reference image has orientation '{orientation_ref}'")
         print(f"Second image has orientation    '{orientation_sec}'")
     if orientation_ref != orientation_sec:
         if verbose:
-            print(f"Converting orientation of second image: '{orientation_sec}' --> '{orientation_ref}'")
+            print(
+                f"Converting orientation of second image: '{orientation_sec}' --> '{orientation_ref}'"
+            )
         orientation_filter.SetDesiredCoordinateOrientation(orientation_ref)
         img_sec_reoriented = orientation_filter.Execute(sitk_img_sec)
-        orientation_sec_reoriented = orientation_filter.GetOrientationFromDirectionCosines(img_sec_reoriented.GetDirection())
+        orientation_sec_reoriented = (
+            orientation_filter.GetOrientationFromDirectionCosines(
+                img_sec_reoriented.GetDirection()
+            )
+        )
         return img_sec_reoriented
     else:
         return sitk_img_sec
 
 
-def match_size(sitk_img_ref, sitk_img_sec, verbose=True, interpolator=SimpleITK.sitkNearestNeighbor):
+def match_size(
+    sitk_img_ref, sitk_img_sec, verbose=True, interpolator=SimpleITK.sitkNearestNeighbor
+):
     size_ref = sitk_img_ref.GetSize()
     size_sec = sitk_img_sec.GetSize()
     if verbose:
         print(f"Reference image has size '{size_ref}'")
         print(f"Second image has size    '{size_sec}'")
-    if not np.all(size_ref==size_sec):
+    if not np.all(size_ref == size_sec):
         if verbose:
             print(f"Resampling second image: '{size_sec}' --> '{size_ref}'")
         resample = SimpleITK.ResampleImageFilter()
@@ -238,6 +250,7 @@ def match_size(sitk_img_ref, sitk_img_sec, verbose=True, interpolator=SimpleITK.
     else:
         return sitk_img_sec
 
+
 def get_dcm_as_sitk(path_to_dcm_dir):
     reader = SimpleITK.ImageSeriesReader()
     dicom_names = reader.GetGDCMSeriesFileNames(path_to_dcm_dir)
@@ -246,7 +259,14 @@ def get_dcm_as_sitk(path_to_dcm_dir):
     return image
 
 
-def nifti_to_seg(nifti_roi, dicom_input, seg_output, roi_dict, match_orientation_flag=False, match_size_flag=False):
+def nifti_to_seg(
+    nifti_roi,
+    dicom_input,
+    seg_output,
+    roi_dict,
+    match_orientation_flag=False,
+    match_size_flag=False,
+):
 
     # Read NIfTI ROI with SimpleITK
     sitk_image = SimpleITK.ReadImage(nifti_roi)
@@ -271,7 +291,12 @@ def nifti_to_seg(nifti_roi, dicom_input, seg_output, roi_dict, match_orientation
         if match_orientation_flag:
             segmentation = match_orientation(dicom_img, segmentation, verbose=True)
         if match_size_flag:
-            segmentation = match_size(dicom_img, segmentation, interpolator=SimpleITK.sitkNearestNeighbor, verbose=True)
+            segmentation = match_size(
+                dicom_img,
+                segmentation,
+                interpolator=SimpleITK.sitkNearestNeighbor,
+                verbose=True,
+            )
 
     # Write resulting DICOM SEG to the output
     writer = pydicom_seg.MultiClassWriter(
@@ -305,6 +330,10 @@ if __name__ == "__main__":
 
     # Transform NIfTI file to SEG using pydicom-seg
     seg_output = nifti_to_seg(
-        args.nifti_roi, args.dicom_input, args.output_seg, roi_dict,
-        args.match_orientation, args.match_size
+        args.nifti_roi,
+        args.dicom_input,
+        args.output_seg,
+        roi_dict,
+        args.match_orientation,
+        args.match_size,
     )
