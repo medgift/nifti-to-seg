@@ -35,7 +35,11 @@ the ROI(s) to convert to DICOM SEG
 file should be saved
 * `-l, --label_map` : *(OPTIONAL)* The path to a CSV file containing 
 pairs of `<label_id>,<label_name>` entries
-
+* `-d, --match-orientation` : *(OPTIONAL)* No value; 
+  presence of argument indicates that orientation of NIfTI file will be matched to DICOM images  
+* `-s, --match-size` : *(OPTIONAL)* No value; 
+  presence of argument indicates that size of NIfTI file will be matched to DICOM images. 
+  
 To execute the script, run:
 
 ```
