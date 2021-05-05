@@ -169,11 +169,12 @@ def generate_metadata(roi_dict):
 
 def get_segments(roi_dict):
     segments = []
-
+    i = 0
     for label, description in roi_dict.items():
         segments.append(
-            get_segment(label, description, colormap.colors[label % len(colormap.colors)])
+            get_segment(label, description, colormap.colors[i % len(colormap.colors)])
         )
+        i += 1
 
     return segments
 
