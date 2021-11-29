@@ -79,7 +79,6 @@ def parse_args():
 
 
 def get_nifti_labels(path):
-
     print("Reading NIfTI file to identify ROIs...")
 
     sitk_image = SimpleITK.ReadImage(path)
@@ -93,7 +92,6 @@ def get_nifti_labels(path):
 
 
 def map_nifti_labels_to_names(labels):
-
     print(
         f"Found {len(labels)} regions in the NIfTI file, please input a name for each of them."
     )
@@ -232,7 +230,7 @@ def match_orientation(sitk_img_ref, sitk_img_sec, verbose=True):
 
 
 def match_size(
-    sitk_img_ref, sitk_img_sec, verbose=True, interpolator=SimpleITK.sitkNearestNeighbor
+        sitk_img_ref, sitk_img_sec, verbose=True, interpolator=SimpleITK.sitkNearestNeighbor
 ):
     size_ref = sitk_img_ref.GetSize()
     size_sec = sitk_img_sec.GetSize()
@@ -260,20 +258,28 @@ def get_dcm_as_sitk(path_to_dcm_dir):
 
 
 def nifti_to_seg(
-    nifti_roi,
-    dicom_input,
-    seg_output,
-    roi_dict,
-    match_orientation_flag=False,
-    match_size_flag=False,
+        nifti_roi,
+        dicom_input,
+        seg_output,
+        roi_dict,
+        match_orientation_flag=False,
+        match_size_flag=False,
 ):
-
     # Read NIfTI ROI with SimpleITK
     sitk_image = SimpleITK.ReadImage(nifti_roi)
 
     # A segmentation image with integer data type
     # and a single component per voxel
     segmentation: SimpleITK.Image = sitk_image
+
+    # Check if segmentation needs to be cast to unsigned type
+    if segmentation.GetPixelID() not in [
+        SimpleITK.sitkUInt8,
+        SimpleITK.sitkUInt16,
+        SimpleITK.sitkUInt32,
+        SimpleITK.sitkUInt64,
+    ]:
+        segmentation = cast_to_unsigned(segmentation)
 
     # Paths to an imaging series related to the segmentation
     dicom_series_paths = get_dicom_paths_from_dir(dicom_input)
@@ -314,6 +320,25 @@ def nifti_to_seg(
     print(f"Successfully wrote output to {seg_output}")
 
 
+def cast_to_unsigned(segmentation):
+    original_pixel_type = segmentation.GetPixelID()
+
+    if original_pixel_type == SimpleITK.sitkInt8:
+        new_pixel_type = SimpleITK.sitkUInt8
+    elif original_pixel_type == SimpleITK.sitkInt16:
+        new_pixel_type = SimpleITK.sitkUInt16
+    elif original_pixel_type == SimpleITK.sitkInt32:
+        new_pixel_type = SimpleITK.sitkUInt32
+    elif original_pixel_type == SimpleITK.sitkInt64:
+        new_pixel_type = SimpleITK.sitkUInt64
+    else:
+        raise ValueError("This segmentation pixel type is not supported!")
+
+    casted_segmentation = SimpleITK.Cast(segmentation, new_pixel_type)
+
+    return casted_segmentation
+
+
 if __name__ == "__main__":
 
     # Parse Args
@@ -329,7 +354,7 @@ if __name__ == "__main__":
         roi_dict = parse_labelmap_file(args.label_map, labels)
 
     # Transform NIfTI file to SEG using pydicom-seg
-    seg_output = nifti_to_seg(
+    nifti_to_seg(
         args.nifti_roi,
         args.dicom_input,
         args.output_seg,
