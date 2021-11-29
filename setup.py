@@ -10,7 +10,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "numpy",
-        "pydicom-seg @ https://github.com/roger-schaer/pydicom-seg.git#egg=pydicom-seg"
+        "pydicom-seg @ git+https://github.com/roger-schaer/pydicom-seg.git",
         "SimpleITK",
         "palettable",
     ],
