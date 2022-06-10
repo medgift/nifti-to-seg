@@ -104,6 +104,28 @@ Put all necessary files in that folder (DICOM & NIfTI), and the
 output will be written there as well.
 * The other parameters are the same as for general Python usage.
 
+## Usage with Singularity  
+
+See the [singularity](https://sylabs.io/docs/) pages for setup.
+
+### Building Image
+Enter the directory where this readme file is located.
+Build the singularity image with name *meshtool.sif* by
+
+```
+    sudo singularity build nifti_to_seg.sif Singularity.nifti-to-seg
+```
+
+### Running MeshTool from Singularity Image
+
+You can enter a shell in the singularity container by
+
+```
+singularity shell -e /path/to/nifti_to_seg.sif
+```
+
+Leave the singularity shell again with `exit`.
+
 ## Authors
 
 * **Roger Schaer** - *Initial work* - [roger-schaer](https://github.com/roger-schaer)

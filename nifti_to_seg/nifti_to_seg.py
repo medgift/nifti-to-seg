@@ -117,17 +117,13 @@ def parse_labelmap_file(labelmap_path, labels):
     with open(labelmap_path) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=CSV_DELIMITER)
         for row in csv_reader:
-            label_id = row[0]
+            label_id = int(row[0])
             label_name = row[1]
-            labels_dict[int(label_id)] = label_name
+            if label_id in labels: # only include ids that are actually present in file
+                labels_dict[label_id] = label_name
             line_count += 1
 
-        if len(labels) != line_count:
-            raise ValueError(
-                "Number of <label_id>,<label_name> pairs doesn't match the number of labels in the NIfTI file"
-            )
-
-        for label in labels:
+        for label in labels:       # check that all labels present in image are included in labels_dict
             if label not in labels_dict:
                 raise ValueError(
                     f"Label with pixel value {label} is not present in the CSV file!"
