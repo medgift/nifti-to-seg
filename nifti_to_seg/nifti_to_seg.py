@@ -117,8 +117,8 @@ def parse_labelmap_file(labelmap_path, labels):
     with open(labelmap_path) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=CSV_DELIMITER)
         for row in csv_reader:
-            label_id = int(row[0])
-            label_name = row[1]
+            label_id = int(row[0].strip())
+            label_name = row[1].strip()
             if label_id in labels: # only include ids that are actually present in file
                 labels_dict[label_id] = label_name
             line_count += 1
