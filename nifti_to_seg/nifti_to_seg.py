@@ -22,9 +22,7 @@ CSV_DELIMITER = ","
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Convert NIfTI ROIs to the DICOM SEG format."
-    )
+    parser = argparse.ArgumentParser(description="Convert NIfTI ROIs to the DICOM SEG format.")
     # DICOM path with the original images
     parser.add_argument(
         "-i",
@@ -78,10 +76,8 @@ def parse_args():
     return args
 
 
-def get_nifti_labels(path):
+def get_nifti_labels(sitk_image):
     print("Reading NIfTI file to identify ROIs...")
-
-    sitk_image = SimpleITK.ReadImage(path)
     image_data = SimpleITK.GetArrayFromImage(sitk_image)
 
     labels = np.trim_zeros(np.unique(image_data))
@@ -92,9 +88,7 @@ def get_nifti_labels(path):
 
 
 def map_nifti_labels_to_names(labels):
-    print(
-        f"Found {len(labels)} regions in the NIfTI file, please input a name for each of them."
-    )
+    print(f"Found {len(labels)} regions in the NIfTI file, please input a name for each of them.")
 
     labels_dict = {}
     i = 1
@@ -119,15 +113,13 @@ def parse_labelmap_file(labelmap_path, labels):
         for row in csv_reader:
             label_id = int(row[0].strip())
             label_name = row[1].strip()
-            if label_id in labels: # only include ids that are actually present in file
+            if label_id in labels:  # only include ids that are actually present in file
                 labels_dict[label_id] = label_name
             line_count += 1
 
-        for label in labels:       # check that all labels present in image are included in labels_dict
+        for label in labels:  # check that all labels present in image are included in labels_dict
             if label not in labels_dict:
-                raise ValueError(
-                    f"Label with pixel value {label} is not present in the CSV file!"
-                )
+                raise ValueError(f"Label with pixel value {label} is not present in the CSV file!")
 
         print(
             f"{len(labels)}/{len(labels)} labels correctly mapped with the provided CSV file, generating DICOM SEG file now..."
@@ -144,6 +136,11 @@ def get_dicom_paths_from_dir(dicom_dir):
 
 
 def generate_metadata(roi_dict):
+    if roi_dict is not None:
+        segment_attributes = [get_segments(roi_dict)]
+    else:
+        segment_attributes = [[get_segment(1, "Probability Map", colormap.colors[0])]]
+
     basic_info = {
         "ContentCreatorName": "NIfTI to SEG",
         "ClinicalTrialSeriesID": "Session1",
@@ -151,7 +148,7 @@ def generate_metadata(roi_dict):
         "SeriesDescription": "Segmentation",
         "SeriesNumber": "300",
         "InstanceNumber": "1",
-        "segmentAttributes": [get_segments(roi_dict)],
+        "segmentAttributes": segment_attributes,
         "ContentLabel": "SEGMENTATION",
         "ContentDescription": "Image segmentation",
         "ClinicalTrialCoordinatingCenterName": "dcmqi",
@@ -165,9 +162,7 @@ def get_segments(roi_dict):
     segments = []
     i = 0
     for label, description in roi_dict.items():
-        segments.append(
-            get_segment(label, description, colormap.colors[i % len(colormap.colors)])
-        )
+        segments.append(get_segment(label, description, colormap.colors[i % len(colormap.colors)]))
         i += 1
 
     return segments
@@ -178,6 +173,7 @@ def get_segment(label, description, color):
         # Make sure we are using a simple int (not a NumPy type)
         "labelID": int(label),
         "SegmentDescription": description,
+        "SegmentLabel": description,
         "SegmentAlgorithmType": "AUTOMATIC",
         "SegmentAlgorithmName": "Automatic",
         # Snomed Coding for Tissue
@@ -199,35 +195,25 @@ def get_segment(label, description, color):
 
 def match_orientation(sitk_img_ref, sitk_img_sec, verbose=True):
     orientation_filter = SimpleITK.DICOMOrientImageFilter()
-    orientation_ref = orientation_filter.GetOrientationFromDirectionCosines(
-        sitk_img_ref.GetDirection()
-    )
-    orientation_sec = orientation_filter.GetOrientationFromDirectionCosines(
-        sitk_img_sec.GetDirection()
-    )
+    orientation_ref = orientation_filter.GetOrientationFromDirectionCosines(sitk_img_ref.GetDirection())
+    orientation_sec = orientation_filter.GetOrientationFromDirectionCosines(sitk_img_sec.GetDirection())
     if verbose:
         print(f"Reference image has orientation '{orientation_ref}'")
         print(f"Second image has orientation    '{orientation_sec}'")
     if orientation_ref != orientation_sec:
         if verbose:
-            print(
-                f"Converting orientation of second image: '{orientation_sec}' --> '{orientation_ref}'"
-            )
+            print(f"Converting orientation of second image: '{orientation_sec}' --> '{orientation_ref}'")
         orientation_filter.SetDesiredCoordinateOrientation(orientation_ref)
         img_sec_reoriented = orientation_filter.Execute(sitk_img_sec)
-        orientation_sec_reoriented = (
-            orientation_filter.GetOrientationFromDirectionCosines(
-                img_sec_reoriented.GetDirection()
-            )
+        orientation_sec_reoriented = orientation_filter.GetOrientationFromDirectionCosines(
+            img_sec_reoriented.GetDirection()
         )
         return img_sec_reoriented
     else:
         return sitk_img_sec
 
 
-def match_size(
-        sitk_img_ref, sitk_img_sec, verbose=True, interpolator=SimpleITK.sitkNearestNeighbor
-):
+def match_size(sitk_img_ref, sitk_img_sec, verbose=True, interpolator=SimpleITK.sitkNearestNeighbor):
     size_ref = sitk_img_ref.GetSize()
     size_sec = sitk_img_sec.GetSize()
     if verbose:
@@ -254,22 +240,20 @@ def get_dcm_as_sitk(path_to_dcm_dir):
 
 
 def nifti_to_seg(
-        nifti_roi,
-        dicom_input,
-        seg_output,
-        roi_dict,
-        match_orientation_flag=False,
-        match_size_flag=False,
+    sitk_image,
+    dicom_input,
+    seg_output,
+    roi_dict,
+    fractional=False,
+    match_orientation_flag=False,
+    match_size_flag=False,
 ):
-    # Read NIfTI ROI with SimpleITK
-    sitk_image = SimpleITK.ReadImage(nifti_roi)
-
     # A segmentation image with integer data type
     # and a single component per voxel
     segmentation: SimpleITK.Image = sitk_image
 
     # Check if segmentation needs to be cast to unsigned type
-    if segmentation.GetPixelID() not in [
+    if roi_dict is not None and segmentation.GetPixelID() not in [
         SimpleITK.sitkUInt8,
         SimpleITK.sitkUInt16,
         SimpleITK.sitkUInt32,
@@ -279,9 +263,7 @@ def nifti_to_seg(
 
     # Paths to an imaging series related to the segmentation
     dicom_series_paths = get_dicom_paths_from_dir(dicom_input)
-    source_images = [
-        pydicom.dcmread(img, stop_before_pixels=True) for img in dicom_series_paths
-    ]
+    source_images = [pydicom.dcmread(img, stop_before_pixels=True) for img in dicom_series_paths]
 
     # Generate template JSON file based on the ROI dict
     metadata = generate_metadata(roi_dict)
@@ -300,16 +282,20 @@ def nifti_to_seg(
                 verbose=True,
             )
 
+    # Choose writer class (fractional or multiclass)
+    writer_class = pydicom_seg.FractionalWriter if fractional else pydicom_seg.MultiClassWriter
+
+    arguments = {
+        "template": template,
+        "skip_empty_slices": False,  # Crop image slices to the minimum bounding box on x and y axes
+        "skip_missing_segment": False,  # If a segment definition is missing in the template, then raise an error instead of skipping it
+    }
+
+    if not fractional:
+        arguments["inplane_cropping"] = False  # Crop image slices to the minimum bounding box on x and y axes
+
     # Write resulting DICOM SEG to the output
-    writer = pydicom_seg.MultiClassWriter(
-        template=template,
-        # Crop image slices to the minimum bounding box on x and y axes
-        inplane_cropping=False,
-        # Don't encode slices with only zeros
-        skip_empty_slices=False,
-        # If a segment definition is missing in the template, then raise an error instead of skipping it
-        skip_missing_segment=False,
-    )
+    writer = writer_class(**arguments)
     dcm = writer.write(segmentation, source_images)
     dcm.save_as(seg_output)
 
@@ -335,26 +321,40 @@ def cast_to_unsigned(segmentation):
     return casted_segmentation
 
 
+def is_fractional(sitk_image):
+    return sitk_image.GetPixelID() in [SimpleITK.sitkFloat32, SimpleITK.sitkFloat64]
+
+
 if __name__ == "__main__":
 
     # Parse Args
     args = parse_args()
 
-    # Load ROI to identify number & IDs of labels
-    labels = get_nifti_labels(args.nifti_roi)
+    # Read NIfTI ROI with SimpleITK
+    sitk_image = SimpleITK.ReadImage(args.nifti_roi)
 
-    # Map label ID to region names
-    if not args.label_map:
-        roi_dict = map_nifti_labels_to_names(labels)
+    # Detect label type (integer = fixed classes, float = fractional)
+    fractional = is_fractional(sitk_image)
+
+    if not fractional:
+        # If it is not fractional, identify number & IDs of labels
+        labels = get_nifti_labels(sitk_image)
+
+        # Map label ID to region names
+        if not args.label_map:
+            roi_dict = map_nifti_labels_to_names(labels)
+        else:
+            roi_dict = parse_labelmap_file(args.label_map, labels)
     else:
-        roi_dict = parse_labelmap_file(args.label_map, labels)
+        roi_dict = None
 
     # Transform NIfTI file to SEG using pydicom-seg
     nifti_to_seg(
-        args.nifti_roi,
+        sitk_image,
         args.dicom_input,
         args.output_seg,
         roi_dict,
+        fractional,
         args.match_orientation,
         args.match_size,
     )
