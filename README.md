@@ -113,7 +113,7 @@ Enter the directory where this readme file is located.
 Build the singularity image with name *meshtool.sif* by
 
 ```
-    sudo singularity build nifti_to_seg.sif Singularity.nifti-to-seg
+sudo singularity build nifti_to_seg.sif Singularity.nifti-to-seg
 ```
 
 ### Running MeshTool from Singularity Image
