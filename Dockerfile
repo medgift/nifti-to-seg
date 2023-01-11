@@ -1,4 +1,4 @@
-FROM python:3.6
+FROM python:3.8
 
 MAINTAINER Roger Schaer <roger.schaer@hevs.ch>
 
@@ -10,7 +10,7 @@ COPY ./requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 
 # Copy source code
-COPY . .
+COPY nifti_to_seg .
 
 # Define entrypoint
 ENTRYPOINT ["python", "/usr/src/app/nifti_to_seg.py"]

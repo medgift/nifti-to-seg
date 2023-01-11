@@ -1,4 +1,4 @@
-numpy
+numpy<1.24
 #git+https://github.com/roger-schaer/pydicom-seg.git#egg=pydicom-seg
 git+https://github.com/razorx89/pydicom-seg.git@feature/write-fractional#egg=pydicom-seg
 SimpleITK
