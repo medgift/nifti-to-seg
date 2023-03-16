@@ -51,6 +51,14 @@ def parse_args():
         help="The path to a CSV file containing pairs of <label_id>,<label_name> entries",
         required=False,
     )
+    # Description for the generated DICOM series
+    parser.add_argument(
+        "-sd",
+        "--series_description",
+        help="The description of the generated DICOM-SEG series",
+        required=False,
+        default="Segmentation",
+    )
     # Match orientation of segmentation image to  dicom series
     parser.add_argument(
         "-d",
@@ -166,7 +174,7 @@ def get_dicom_paths_from_dir(dicom_dir):
     return paths
 
 
-def generate_metadata(roi_dict):
+def generate_metadata(roi_dict, series_description="Segmentation"):
     if roi_dict is not None:
         segment_attributes = [get_segments(roi_dict)]
     else:
@@ -176,7 +184,7 @@ def generate_metadata(roi_dict):
         "ContentCreatorName": "NIfTI to SEG",
         "ClinicalTrialSeriesID": "Session1",
         "ClinicalTrialTimePointID": "1",
-        "SeriesDescription": "Segmentation",
+        "SeriesDescription": series_description,
         "SeriesNumber": "300",
         "InstanceNumber": "1",
         "segmentAttributes": segment_attributes,
@@ -275,6 +283,7 @@ def nifti_to_seg(
     dicom_input,
     seg_output,
     roi_dict,
+    series_description="Segmentation",
     fractional=False,
     match_orientation_flag=False,
     match_size_flag=False,
@@ -300,7 +309,7 @@ def nifti_to_seg(
     source_images = [pydicom.dcmread(img, stop_before_pixels=True) for img in dicom_series_paths]
 
     # Generate template JSON file based on the ROI dict
-    metadata = generate_metadata(roi_dict)
+    metadata = generate_metadata(roi_dict, series_description)
     template = pydicom_seg.template.from_dcmqi_metainfo(metadata)
 
     # Ensure that segmentation image and dicom image have same orientation and size
@@ -390,6 +399,7 @@ if __name__ == "__main__":
         args.dicom_input,
         args.output_seg,
         roi_dict,
+        args.series_description,
         fractional,
         args.match_orientation,
         args.match_size,
