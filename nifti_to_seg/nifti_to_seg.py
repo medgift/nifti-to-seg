@@ -71,6 +71,37 @@ def parse_args():
         default=False,
         nargs="?",
     )
+    # Skip empty slices
+    parser.add_argument(
+        "-e",
+        "--skip_empty",
+        help="Skip empty slices in the DICOM-SEG file to reduce file size",
+        required=False,
+        const=True,
+        default=False,
+        nargs="?",
+    )
+    # Inplane cropping
+    parser.add_argument(
+        "-c",
+        "--inplane_cropping",
+        help="Crop image slices to the minimum bounding box on x and y axes to reduce file size (not supported by OHIF)",
+        required=False,
+        const=True,
+        default=False,
+        nargs="?",
+    )
+    # Skip missing segment
+    parser.add_argument(
+        "-m",
+        "--skip_missing_segment",
+        help="Control whether to raise an error when a segment is missing rather than skipping it",
+        required=False,
+        const=True,
+        default=False,
+        nargs="?",
+    )
+
     args = parser.parse_args()
     logger.debug(f"parsed args : {vars(args)}")
     return args
@@ -247,6 +278,9 @@ def nifti_to_seg(
     fractional=False,
     match_orientation_flag=False,
     match_size_flag=False,
+    skip_empty_slices=True,
+    inplane_cropping=False,
+    skip_missing_segment=False,
 ):
     # A segmentation image with integer data type
     # and a single component per voxel
@@ -287,12 +321,14 @@ def nifti_to_seg(
 
     arguments = {
         "template": template,
-        "skip_empty_slices": False,  # Crop image slices to the minimum bounding box on x and y axes
-        "skip_missing_segment": False,  # If a segment definition is missing in the template, then raise an error instead of skipping it
+        "skip_empty_slices": skip_empty_slices,  # Crop image slices to the minimum bounding box on x and y axes
+        "skip_missing_segment": skip_missing_segment,  # Control whether to raise an error when a segment is missing
     }
 
     if not fractional:
-        arguments["inplane_cropping"] = False  # Crop image slices to the minimum bounding box on x and y axes
+        arguments[
+            "inplane_cropping"
+        ] = inplane_cropping  # Crop image slices to the minimum bounding box on x and y axes
 
     # Write resulting DICOM SEG to the output
     writer = writer_class(**arguments)
@@ -357,4 +393,7 @@ if __name__ == "__main__":
         fractional,
         args.match_orientation,
         args.match_size,
+        args.skip_empty,
+        args.inplane_cropping,
+        args.skip_missing_segment,
     )
