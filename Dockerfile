@@ -13,7 +13,7 @@ RUN pip install -r /requirements.txt
 COPY nifti_to_seg .
 
 # Define entrypoint
-ENTRYPOINT ["python", "/usr/src/app/nifti_to_seg.py"]
+#ENTRYPOINT ["python", "/usr/src/app/nifti_to_seg.py"]
 
 # Default command - show help
 CMD ["--help"]
