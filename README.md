@@ -38,7 +38,15 @@ pairs of `<label_id>,<label_name>` entries
 * `-d, --match_orientation` : *(OPTIONAL)* No value; 
   presence of argument indicates that orientation of NIfTI file will be matched to DICOM images  
 * `-s, --match_size` : *(OPTIONAL)* No value; 
-  presence of argument indicates that size of NIfTI file will be matched to DICOM images. 
+  presence of argument indicates that size of NIfTI file will be matched to DICOM images.
+* `-e, --skip_empty` : *(OPTIONAL)* No value;
+  presence of argument indicates that empty slices should not be included in the output DICOM SEG file
+* `-c, --inplane_cropping` : *(OPTIONAL)* No value;
+  presence of argument indicates that the images should be cropped to the minimum bounding box on the
+  x & y axes (NOTE: this is not supported for display by all image viewers, e.g. OHIF)
+* `-m, --skip_missing_segment` : *(OPTIONAL)* No value;
+  presence of argument indicates that segments not declared in the provided label map should be skipped
+  rather than an error being raised about the missing segment metadata
   
 To execute the script, run:
 
@@ -93,6 +101,7 @@ medgift/nifti-to-seg:latest \
 --nifti_roi=/data/seg.nii \
 --output_seg=/data/seg.dcm \
 --label_map=/data/labels.csv (OPTIONAL)
+... (other OPTIONAL arguments)
 ```
 
 The parameters are the following:
