@@ -129,6 +129,7 @@ Leave the singularity shell again with `exit`.
 ## Authors
 
 * **Roger Schaer** - *Initial work* - [roger-schaer](https://github.com/roger-schaer)
+* **Daniel Abler** - *Improvements and Singularity support*  - [danielabler](https://github.com/danielabler)
 
 ## License
 
